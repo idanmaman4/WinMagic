@@ -5,6 +5,8 @@ VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinForensiscs", "WinForensiscs\WinForensiscs.vcxproj", "{1B013434-957F-4BF6-8222-427DBD61597D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinDbgCppCommon", "WinDbgCppCommon\WinDbgCppCommon.vcxitems", "{5F48FB1D-5F2B-4C90-AC09-227EF8AB2576}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

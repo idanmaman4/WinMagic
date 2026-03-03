@@ -130,10 +130,10 @@ Expected<Address> DebugMagic::read_pointer_memory_physical(Address address)
 }
 
 
-Expected<Address> DebugMagic::get_symbol_address(const std::string& symbol)
+Expected<Address> DebugMagic::get_symbol_address(const std::string& module, const std::string& symbol)
 {
     Address result = {0};
-    HRESULT hr = m_symbols.get_interface()->GetOffsetByName(symbol.c_str(),&result);
+    HRESULT hr = m_symbols.get_interface()->GetOffsetByName(format_symbol_module(module, symbol).c_str(),&result);
     if (FAILED(hr)) {
 
         return unexpected(std::exception("Couldn't read symbol"));
@@ -142,6 +142,29 @@ Expected<Address> DebugMagic::get_symbol_address(const std::string& symbol)
     return result;
 }
 
+
+Expected<std::pair<std::string,std::string>> DebugMagic::get_symbol_from_address(Address address)
+{
+    std::string name;
+    name.resize(MAX_PATH);
+
+    HRESULT hr = m_symbols.get_interface()->GetNameByOffset(address, name.data(), name.size(), nullptr, nullptr);
+    if (FAILED(hr)) {
+        return unexpected(exception("Coludn't read symbol from address"));
+    }
+
+    size_t sep = name.find('!');
+    if (sep == std::string::npos)
+        return std::unexpected(std::exception("No module separator found"));
+
+    return std::make_pair(name.substr(0, sep), name.substr(sep + 1));
+}
+
+
+std::string DebugMagic::format_symbol_module(const std::string& module, const std::string symbol)
+{
+    return format("{}!{}",module,symbol);
+}
 
 Expected<CV_INFO_PDB70> DebugMagic::get_pdb_info_for_module_base(Address module_base)
 {

@@ -49,7 +49,14 @@ public:
     Expected<ValueType> parse_windbg_command_value(const std::string& command,
                                                    ValueType (*parser)(std::string));
 
-    Expected<Address> get_symbol_address(const std::string& symbol);
+    Expected<Address> get_symbol_address(const std::string& module, const std::string& symbol);
+
+    template<typename ValueType>
+    Expected<ValueType> get_symbol_address_as_struct(const std::string& module, const std::string& symbol);
+
+    template<typename ValueType>
+    Expected<std::vector<ValueType>> get_symbol_address_as_struct_array(const std::string& module, const std::string& symbol, size_t length);
+
 
     template<typename ValueType>
     Expected<ValueType> get_struct_field(const std::string& module_name,
@@ -91,15 +98,21 @@ public:
                                    int max_depth);
  
     template <FixedString  MODULE_NAME, FixedString TYPE_NAME>
-    Expected<GenericTypeContainer> get_symbol_address_as(const std::string& symbol,
+    Expected<GenericTypeContainer> get_symbol_address_as(const std::string& module,
+                                                         const std::string& symbol,
                                                          size_t max_depth = 1);
 
     template <FixedString  MODULE_NAME, FixedString TYPE_NAME, FixedString FIELD_NAME>
     Expected<GenericTypeContainer> get_struct_from_field_as(Address field_address, size_t max_depth = 1); 
 
 
+    Expected<std::pair<std::string,std::string>> get_symbol_from_address(Address address);
+
+
 private:
     
+    std::string format_symbol_module(const std::string& module, const std::string symbol);
+
     Expected<CV_INFO_PDB70> get_pdb_info_for_module_base(Address module_base);
 
     SymbolClient m_symbol_client;
@@ -144,6 +157,40 @@ inline Expected<ValueType> DebugMagic::parse_windbg_command_value(const std::str
 
 
 template<typename ValueType>
+inline Expected<ValueType> DebugMagic::get_symbol_address_as_struct(const std::string& module, const std::string& symbol)
+{
+    Expected<Address> symbol_address = get_symbol_address(module, symbol);
+    if (!symbol_address.has_value()) {
+        return std::unexpected(symbol_address.error());
+    }
+
+    
+    return read_struct_memory_virtual<ValueType>(symbol_address.value());
+}
+
+template<typename ValueType>
+inline Expected<std::vector<ValueType>> DebugMagic::get_symbol_address_as_struct_array(const std::string& module, const std::string& symbol, size_t length)
+{
+    std::vector<ValueType> result;
+    Expected<Address> symbol_address = get_symbol_address(module, symbol);
+    
+    if (!symbol_address.has_value()) {
+        return std::unexpected(symbol_address.error());
+    }
+    
+    for (size_t i = 0; i < length; i++)
+    {
+        Expected<ValueType> value = read_struct_memory_virtual<ValueType>(symbol_address.value() + i * sizeof(ValueType));
+        if (!value.has_value()) {
+            return std::unexpected(value.error());
+        }
+        result.emplace_back(value.value());
+    }
+
+    return result;
+}
+
+template<typename ValueType>
 inline Expected<ValueType> DebugMagic::get_struct_field(const std::string& module_name,
                                                         const std::string& type,
                                                         const std::string& field_name,
@@ -175,10 +222,11 @@ inline Expected<ValueType> DebugMagic::get_struct_field(const std::string& modul
 }
 
 template<FixedString  MODULE_NAME, FixedString  TYPE_NAME>
-inline Expected<GenericTypeContainer> DebugMagic::get_symbol_address_as(const std::string& symbol,
+inline Expected<GenericTypeContainer> DebugMagic::get_symbol_address_as(const std::string& module,
+                                                                        const std::string& symbol,
                                                                         size_t max_depth)
 {
-    Expected<Address> sym_address = get_symbol_address(symbol);
+    Expected<Address> sym_address = get_symbol_address(module, symbol);
     if (!sym_address.has_value()) {
         return std::unexpected(sym_address.error());
     }
