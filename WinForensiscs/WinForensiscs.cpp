@@ -8,6 +8,7 @@
 #include<vector>
 #include <array>
 #include "DebugMagic.h"
+#include "GenericTypeContainer.h"
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "dbgeng.lib")
 
@@ -49,33 +50,35 @@ int wmain(int argc, wchar_t* argv[])
 
     DebugMagic debug_magic(argv[1]);
     debug_magic.load_ntos_symbols();
-    Expected<Address> head = debug_magic.get_symbol_address("nt!PsActiveProcessHead");
-    Address current_link;
-    if (!head.has_value()) {
+    
+
+    Expected<GenericTypeContainer> process_head = debug_magic.get_symbol_address_as<"nt","_LIST_ENTRY">("nt!PsActiveProcessHead");
+    if (!process_head.has_value()) {
         return -1;
     }
-    current_link = head.value();
+    Address current_link = process_head.value().get<Address>("Flink"), head= process_head.value().address();
     
     do {
-        auto eprocess = debug_magic.get_struct_base_from_field("nt", "_EPROCESS", "ActiveProcessLinks", current_link);
-
-        if (!eprocess.has_value()){
-            break;
-        }
-        
-        auto image_name = debug_magic.get_struct_field<std::array<char, 15>>("nt", "_EPROCESS", "ImageFileName", eprocess.value());
-        if (image_name.has_value()) {
-           std::string name(image_name.value().begin(), image_name.value().end());
-           std::cout << name << std::endl;
-        }
-
        Expected<Address> link = debug_magic.get_struct_field<Address>("nt", "_LIST_ENTRY", "Flink", current_link);
        if (!link.has_value()) {
             break;
        }
-       current_link = link.value();
 
-    }while (current_link != head.value() && current_link != 0 );
+       current_link = link.value();
+       if (current_link == head) {
+            break;
+       }
+       auto eprocess = debug_magic.get_struct_from_field_as<"nt", "_EPROCESS", "ActiveProcessLinks">(current_link);
+       if (!eprocess.has_value()){
+            break;
+       }
+      
+       std::cout << " Pid: " << *eprocess.value().get("UniqueProcessId") 
+                 << " Name:" << *eprocess.value().get("ImageFileName") 
+                 << std::endl;
+
+
+    }while (current_link != 0 );
 
     return 0;
 }

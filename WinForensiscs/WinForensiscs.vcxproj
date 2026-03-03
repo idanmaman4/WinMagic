@@ -133,13 +133,18 @@
   <ItemGroup>
     <ClCompile Include="DebugBridge.cpp" />
     <ClCompile Include="DebugMagic.cpp" />
+    <ClCompile Include="GenericTypeContainer.cpp" />
+    <ClCompile Include="FieldInfoMagic.cpp" />
     <ClCompile Include="SymbolClient.cpp" />
     <ClCompile Include="WinForensiscs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DebugBridge.h" />
     <ClInclude Include="DebugMagic.h" />
+    <ClInclude Include="GenericTypeContainer.h" />
+    <ClInclude Include="FieldInfoMagic.h" />
     <ClInclude Include="SymbolClient.h" />
+    <ClInclude Include="Types.h" />
     <ClInclude Include="WinStructres.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

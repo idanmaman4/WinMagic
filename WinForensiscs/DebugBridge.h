@@ -26,6 +26,12 @@ public:
 			m_client_base->Release();
 		}
     }
+
+    MasterDebugBridge(MasterDebugBridge&) = delete;
+    MasterDebugBridge(MasterDebugBridge&&)= delete;
+    MasterDebugBridge& operator=(MasterDebugBridge&) = delete;
+    MasterDebugBridge& operator=(MasterDebugBridge&&) = delete;
+
 private: 
     IDebugClient* m_client_base;
 };
