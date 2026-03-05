@@ -1,5 +1,7 @@
 #include "DebugMagic.h"
-
+#include "PeUtils.h"
+#include "TypeMagic.h"
+#include <iostream>
 
 using namespace std;
 
@@ -32,7 +34,7 @@ DebugMagic::~DebugMagic()
 
 void DebugMagic::load_module_base_symbols(const Address module_base)
 {
-    Expected<CV_INFO_PDB70> pdb_info = get_pdb_info_for_module_base(module_base);
+    Expected<CV_INFO_PDB70> pdb_info = PeUtils::get_pdb_info_for_pe(*this, module_base);
     if (!pdb_info.has_value()) {
         throw pdb_info.error();
     }
@@ -136,7 +138,7 @@ Expected<Address> DebugMagic::get_symbol_address(const std::string& module, cons
     HRESULT hr = m_symbols.get_interface()->GetOffsetByName(format_symbol_module(module, symbol).c_str(),&result);
     if (FAILED(hr)) {
 
-        return unexpected(std::exception("Couldn't read symbol"));
+        return unexpected(exception("Couldn't read symbol"));
     }
 
     return result;
@@ -145,8 +147,7 @@ Expected<Address> DebugMagic::get_symbol_address(const std::string& module, cons
 
 Expected<std::pair<std::string,std::string>> DebugMagic::get_symbol_from_address(Address address)
 {
-    std::string name;
-    name.resize(MAX_PATH);
+    std::string name(MAX_PATH,'\0');
 
     HRESULT hr = m_symbols.get_interface()->GetNameByOffset(address, name.data(), name.size(), nullptr, nullptr);
     if (FAILED(hr)) {
@@ -157,57 +158,21 @@ Expected<std::pair<std::string,std::string>> DebugMagic::get_symbol_from_address
     if (sep == std::string::npos)
         return std::unexpected(std::exception("No module separator found"));
 
+    name.resize(strlen(name.data()));
+    
     return std::make_pair(name.substr(0, sep), name.substr(sep + 1));
+}
+
+
+FieldInfoMagic& DebugMagic::get_field_info_magic()
+{
+    return m_field_magic;
 }
 
 
 std::string DebugMagic::format_symbol_module(const std::string& module, const std::string symbol)
 {
     return format("{}!{}",module,symbol);
-}
-
-Expected<CV_INFO_PDB70> DebugMagic::get_pdb_info_for_module_base(Address module_base)
-{
-   static constexpr size_t PE_HEADER_SIZE = 0x1000 ;
-
-   auto failed_result = unexpected(std::exception("Couldn't find pdb information in given module base"));
-
-   Expected<Bytes> ntos_header = read_memory_virtual(module_base, PE_HEADER_SIZE);
-   if(!ntos_header.has_value())
-       return failed_result;
-
-   std::byte* host_map_module = ntos_header.value().data();
-
-   PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)host_map_module;
-   if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE) 
-       return failed_result;
- 
-   PIMAGE_NT_HEADERS64 ntHeaders = (PIMAGE_NT_HEADERS64)(host_map_module + dosHeader->e_lfanew);
-   if (ntHeaders->Signature != IMAGE_NT_SIGNATURE) 
-        return failed_result;
-   IMAGE_DATA_DIRECTORY debugDirInfo = ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG];
-   if (debugDirInfo.Size == 0)
-       return failed_result;
-
-   Expected<Bytes> debug_directory =  read_memory_virtual(module_base + debugDirInfo.VirtualAddress, debugDirInfo.Size);
-   if(!debug_directory.has_value())
-       return failed_result;
-    DWORD numEntries = debugDirInfo.Size / sizeof(IMAGE_DEBUG_DIRECTORY);
-
-    PIMAGE_DEBUG_DIRECTORY debugEntry = (PIMAGE_DEBUG_DIRECTORY)debug_directory.value().data();
-
-    for (DWORD i = 0; i < numEntries; i++, debugEntry++) {
-        if (debugEntry->Type == IMAGE_DEBUG_TYPE_CODEVIEW) {
-            Expected<CV_INFO_PDB70> debug_info =  read_struct_memory_virtual<CV_INFO_PDB70>(module_base + debugEntry->AddressOfRawData);
-            if (debug_info.has_value()) {
-                return debug_info.value();
-            }
-
-        }
-    }
-
-    return failed_result; 
-
 }
 
 
@@ -269,15 +234,17 @@ Expected<ULONG> DebugMagic::get_type_size(ULONG64 mod,
 Expected<std::string> DebugMagic::get_type_name(ULONG64 mod,
                                                 ULONG type_id)
 {
-    std::string buf;
-    buf.resize(MAX_PATH);
-
+    std::string buf(MAX_PATH, '\0');
 
     HRESULT hr = m_symbols_fields.get_interface()->GetTypeName(mod, type_id, buf.data(), buf.size(), nullptr);
+    
     if (FAILED(hr)) {
         return std::unexpected(std::exception("Couldn't get type name"));
     }
 
+    buf.resize(strlen(buf.data()));
+
+    std::cout << "Type: " << buf << std::endl ;
     return buf;
 }
 
@@ -305,8 +272,7 @@ Expected<FieldInfo> DebugMagic::get_field_info(ULONG64 mod,
         .type_name  = type_name.value(),
         .type_id    = field_type_id,
         .offset     = field_offset,
-        .size       = type_size.value(),
-        .is_pointer = !type_name->empty() && type_name->back() == '*'
+        .size       = type_size.value()
     };
 }
 
@@ -329,104 +295,10 @@ Expected<std::vector<std::string>> DebugMagic::get_field_names(ULONG64 mod,
 }
 
 
-
-TypedValue DebugMagic::resolve_field_value(
-    ULONG64            mod,
-    const FieldInfo&   field,
-    Address            field_address,
-    const std::string& module_name,
-    int                max_depth)
-{
-    auto make = [&](auto val) -> TypedValue {
-        return TypedValue{ field.type_name, val };
-    };
-
-    auto unreadable = [&]() -> TypedValue {
-        return TypedValue{ field.type_name, std::string("<unreadable>") };
-    };
-
-    // Pointer
-    if (field.is_pointer) {
-        auto ptr = read_pointer_memory_virtual(field_address);
-        return ptr.has_value() ? make(ptr.value()) : unreadable();
-    }
-
-    // char[]
-    if (field.type_name.contains("har") && !field.type_name.contains('W') && field.size > 1) {
-        auto bytes = read_memory_virtual(field_address, field.size);
-        if (!bytes.has_value()) return unreadable();
-        auto* data = reinterpret_cast<const char*>(bytes->data());
-        return make(std::string(data, strnlen(data, field.size)));
-    }
-
-    // wchar[]
-    if (field.type_name.contains("har") && field.type_name.contains('W') && field.size > 1) {
-        auto bytes = read_memory_virtual(field_address, field.size);
-        if (!bytes.has_value()) return unreadable();
-        auto* data = reinterpret_cast<const wchar_t*>(bytes->data());
-        return make(std::wstring(data, wcsnlen(data, field.size / sizeof(wchar_t))));
-    }
-
-    // Nested struct — recurse
-    if (field.size > 8 && max_depth > 1) {
-        auto nested = struct_magic(module_name, field.type_name, field_address, max_depth - 1);
-        if (nested.has_value())
-            return make(std::make_shared<GenericTypeContainer>(std::move(nested.value())));
-        return unreadable();
-    }
-
-    // Floats
-    if (field.type_name == "float")  { auto v = read_struct_memory_virtual<float> (field_address); return v.has_value() ? make(v.value()) : unreadable(); }
-    if (field.type_name == "double") { auto v = read_struct_memory_virtual<double>(field_address); return v.has_value() ? make(v.value()) : unreadable(); }
-
-    // Integers by size
-    switch (field.size)
-    {
-        case 1: { auto v = read_struct_memory_virtual<uint8_t> (field_address); return v.has_value() ? make(v.value()) : unreadable(); }
-        case 2: { auto v = read_struct_memory_virtual<uint16_t>(field_address); return v.has_value() ? make(v.value()) : unreadable(); }
-        case 4: { auto v = read_struct_memory_virtual<uint32_t>(field_address); return v.has_value() ? make(v.value()) : unreadable(); }
-        case 8: { auto v = read_struct_memory_virtual<uint64_t>(field_address); return v.has_value() ? make(v.value()) : unreadable(); }
-        default: break;
-    }
-
-    // Raw blob fallback
-    auto bytes = read_memory_virtual(field_address, field.size);
-    return bytes.has_value() ? make(bytes.value()) : unreadable();
-}
-
-
-Expected<GenericTypeContainer> DebugMagic::struct_magic(
+Expected<shared_ptr<GenericTypeContainer>> DebugMagic::struct_magic(
     const std::string& module_name,
     const std::string& type,
-    Address     address,
-    int         max_depth)
+    Address     address)
 {
-    Expected<Address> module_base = get_module_base(module_name);
-    if (!module_base.has_value()) {
-        return unexpected(std::exception("Couldn't resolve module base"));
-    }
-
-    if (max_depth <= 0)
-        return std::unexpected(std::exception("Max depth reached"));
-
-    Expected<TypeInfoCache*> type_cache_info = m_field_magic.get_type_info(module_name, type);
-    if (!type_cache_info.has_value()) {
-        return unexpected(std::exception("Couldnt load type!"));
-    }
-
-    GenericTypeContainer container(type, address);
-
-    for (const auto& field_item : *type_cache_info.value())
-    {
-        Address field_address = address + static_cast<Address>(field_item.second.offset);
-        
-        container.set(field_item.first, 
-                      resolve_field_value(module_base.value(), 
-                                          field_item.second, 
-                                          field_address, 
-                                          module_name, 
-                                          max_depth));
-    }
-
-    return container;
+    return TypeMagic::do_type_magic(*this, address, type, module_name);
 }

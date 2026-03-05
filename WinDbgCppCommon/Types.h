@@ -4,9 +4,11 @@
 #include <exception>
 #include <expected>
 #include <string>
+#include <span>
 #include "Windows.h"
 
 using Bytes = std::vector<std::byte>;
+using BytesView = std::span<std::byte>;
 
 template <typename T>
 using Expected = std::expected<T,std::exception>;
@@ -15,12 +17,16 @@ using Address = uintptr_t;
 
 struct FieldInfo
 {
+
     std::string name;
+
     std::string type_name;
+    std::string module_name;
+
     ULONG       type_id  = 0;
     ULONG       offset   = 0;
     ULONG       size     = 0;
-    bool        is_pointer = false;
+
 };
 
 template <std::size_t N>

@@ -2,7 +2,7 @@
 #include <exception>
 #include <DbgEng.h>
 #include <concepts>
-
+#pragma comment(lib, "dbgeng.lib")
 
 class MasterDebugBridge {
 public:
@@ -22,9 +22,13 @@ public:
     }
     
     ~MasterDebugBridge() {
-        if(m_client_base) {
-			m_client_base->Release();
-		}
+        try {
+            if (m_client_base) {
+                m_client_base->Release();
+            }
+            CoUninitialize();
+        }
+        catch (...) {}
     }
 
     MasterDebugBridge(MasterDebugBridge&) = delete;
