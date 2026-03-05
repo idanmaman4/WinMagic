@@ -130,6 +130,25 @@ TypedValue do_field_magic(DebugMagic& debugmagic, Address field_address, FieldIn
 }
 
 
+Expected<std::shared_ptr<GenericTypeContainer>> do_magic_pointer(DebugMagic& debugmagic,TypedValue resolve_ptr)
+{
+	if (resolve_ptr.s_type_name.ends_with(POINTER_SUFFIX)) {
+		Address ptr_val = get<Address>(resolve_ptr.s_value);
+		string_view value_type_name_view = string_view(resolve_ptr.s_type_name.data(),
+													   resolve_ptr.s_type_name.size() - POINTER_SUFFIX.size());
+
+		string value_type_name(value_type_name_view.begin(), value_type_name_view.end());
+
+		try {
+			return do_type_magic(debugmagic, ptr_val, value_type_name, resolve_ptr.s_module_name);
+		}
+		catch (...) {
+			return unexpected(exception("Can't read this pointer - invalid address"));
+		}
+	}
+}
+
+
 TypedValue parse_as_as_bytes(DebugMagic& debugmagic, Address field_address, FieldInfo& field_info)
 {
 	Expected<Bytes> value = debugmagic.read_memory_virtual(field_address, field_info.size);

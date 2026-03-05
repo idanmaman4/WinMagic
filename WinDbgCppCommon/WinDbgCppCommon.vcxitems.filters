@@ -39,6 +39,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)TypeMagic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="$(MSBuildThisFileDirectory)MagicUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)DebugBridge.cpp">
@@ -65,5 +66,6 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)TypeMagic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="$(MSBuildThisFileDirectory)MagicUtils.cpp" />
   </ItemGroup>
 </Project>

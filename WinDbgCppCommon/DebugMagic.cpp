@@ -3,6 +3,7 @@
 #include "TypeMagic.h"
 #include <iostream>
 
+
 using namespace std;
 
 
@@ -169,6 +170,16 @@ FieldInfoMagic& DebugMagic::get_field_info_magic()
     return m_field_magic;
 }
 
+Expected<std::shared_ptr<GenericTypeContainer>> DebugMagic::from_ptr(std::shared_ptr<GenericTypeContainer> container, const std::string& field)
+{
+    const optional<TypedValue> field_val = container->get(field);
+    if (!field_val.has_value()) {
+        return unexpected(exception("Invalid field name"));
+    }
+
+    return TypeMagic::do_magic_pointer(*this, *field_val);
+}
+
 
 std::string DebugMagic::format_symbol_module(const std::string& module, const std::string symbol)
 {
@@ -244,7 +255,6 @@ Expected<std::string> DebugMagic::get_type_name(ULONG64 mod,
 
     buf.resize(strlen(buf.data()));
 
-    std::cout << "Type: " << buf << std::endl ;
     return buf;
 }
 

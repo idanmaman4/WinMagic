@@ -31,10 +31,7 @@ struct TypedValue
         float,   double,
 
         std::vector<TypedValue>,
-        std::shared_ptr<GenericTypeContainer>,
-
-        // fallback
-        Bytes
+        std::shared_ptr<GenericTypeContainer>
     > ;
 
     TypedValue(std::string module_name, const std::string& type_name, ValueType value) : s_module_name(module_name), s_type_name(type_name), s_value(value)
@@ -77,24 +74,18 @@ public:
 
     Expected<float> as_float(const std::string& field);
 
-    std::string to_string(int indent = 0) const;
-
+    Expected<std::shared_ptr<GenericTypeContainer>> as_object(const std::string& field);
+    
 private:
+
     std::string m_struct_type;
     const std::string& m_module_name;
 
     std::map<std::string, TypedValue> m_fields;
     Address m_address;
-
-    static std::string value_to_string(const TypedValue& typed, int indent);
 };
 
 
-// Defined AFTER GenericTypeContainer is fully defined so v->to_string() is valid
-inline std::ostream& operator<<(std::ostream& os, const TypedValue& tv)
-{
-    return os;
-}
 
 
 template <typename T>

@@ -25,9 +25,12 @@ namespace TypeMagic
 	
 	extern std::map<std::string, ParseBasicType> basic_types;
 
-	 std::shared_ptr<GenericTypeContainer> do_type_magic(DebugMagic& debugmagic, Address field_address, std::string type_name, const std::string& module_base);
+	std::shared_ptr<GenericTypeContainer> do_type_magic(DebugMagic& debugmagic, Address field_address, std::string type_name, const std::string& module_base);
 
 	TypedValue do_field_magic(DebugMagic& debugmagic, Address field_address, FieldInfo& field_info);
+
+	Expected<std::shared_ptr<GenericTypeContainer>> do_magic_pointer(DebugMagic& debugmagic, TypedValue resolve_ptr);
+
 
 	template <typename T>
 	TypedValue parse_basic_type(DebugMagic& debugmagic, Address field_address, FieldInfo& field_info)
@@ -40,21 +43,6 @@ namespace TypeMagic
 
 		return TypedValue(field_info.module_name, field_info.type_name, *value);
 
-	}
-
-	template <IsString T>
-	TypedValue parse_as_string(DebugMagic& debugmagic, Address field_address, FieldInfo& field_info)
-	{
-		Expected<Bytes> string_val = debugmagic.read_memory_virtual(field_address, field_info.size);
-		if (!string_val.has_value()) {
-			throw string_val.error(); 
-		}
-
-		T value(reinterpret_cast<T::value_type*>(string_val->data()), string_val->size());
-	
-		return TypedValue(field_info.module_name,
-						  field_info.type_name,
-						  value);
 	}
 
 	

@@ -113,6 +113,8 @@ public:
 
     FieldInfoMagic& get_field_info_magic();
 
+    Expected<std::shared_ptr<GenericTypeContainer>> from_ptr(std::shared_ptr<GenericTypeContainer> container, const std::string& field);
+
 private:
     
     std::string format_symbol_module(const std::string& module, const std::string symbol);

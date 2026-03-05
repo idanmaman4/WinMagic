@@ -50,7 +50,7 @@ Expected<CV_INFO_PDB70> get_pdb_info_for_pe(DebugMagic& debugmagic, Address modu
 Expected<BytesView> get_nt_header_for_pe(DebugMagic& debugmagic, BytesView pe_header_view)
 {
 
-   std::byte* host_map_module = pe_header_view.data();
+   unsigned char* host_map_module = pe_header_view.data();
 
    PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)host_map_module;
    if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE) 

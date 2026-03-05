@@ -9,6 +9,7 @@
 #include <array>
 #include <ranges>
 #include "DebugMagic.h"
+#include "MagicUtils.h"
 #include "GenericTypeContainer.h"
 #pragma comment(lib, "urlmon.lib")
 #pragma comment(lib, "dbgeng.lib")
@@ -89,9 +90,10 @@ int wmain(int argc, wchar_t* argv[])
     if (!process_head.has_value()) {
         return -1;
     }
-    Address current_link = process_head.value()->get<Address>("Flink").value(), head= process_head.value()->address();
-    
 
+    Address current_link = process_head.value()->get<Address>("Flink").value();    
+    auto head= process_head.value()->address();
+    
     i=0;
     do {
        i+=1;
@@ -100,13 +102,23 @@ int wmain(int argc, wchar_t* argv[])
             break;
        }
 
+       auto image_file_pointer = debug_magic.from_ptr(eprocess.value(), "ImageFilePointer");
+       
 
-       std::cout << i << " .) "
-                 << " Pid: " << eprocess.value()->as_number_unsigned("UniqueProcessId").value_or(0)
-                   << " Name: " << eprocess.value()->as_string("ImageFileName").value_or("Unkown_Name")
-                 << std::endl;
+       std::wstring full_name;
+       if (image_file_pointer.has_value()) {
+            auto unicode_string_obj = image_file_pointer.value()->as_object("FileName"); 
+            full_name = MagicUtils::parse_unicode_string(debug_magic, unicode_string_obj.value());
+       }
 
-       Expected<Address> link = debug_magic.get_struct_field<Address>("nt", "_LIST_ENTRY", "Flink", current_link);
+
+       std::cout << i << " .) ";
+       std::cout << " Pid: " << eprocess.value()->as_number_unsigned("UniqueProcessId").value_or(0);
+       std::cout << " | Name: " << eprocess.value()->as_string("ImageFileName").value_or("Unkown_Name");
+       std::wcout << " | Full Path: " << full_name << std::endl ;
+                 
+
+       Expected<Address> link = eprocess.value()->as_object("ActiveProcessLinks")->get()->as_pointer("Flink");
        if (!link.has_value()) {
             break;
        }

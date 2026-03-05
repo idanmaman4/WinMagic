@@ -19,6 +19,7 @@
     <ClInclude Include="$(MSBuildThisFileDirectory)DebugMagic.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)FieldInfoMagic.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)GenericTypeContainer.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)MagicUtils.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)PeUtils.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)ProcessMagic.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)SymbolClient.h" />
@@ -31,6 +32,7 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)DebugMagic.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)FieldInfoMagic.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)GenericTypeContainer.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)MagicUtils.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)PeUtils.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)ProcessMagic.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)SymbolClient.cpp" />

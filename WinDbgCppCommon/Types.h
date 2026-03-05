@@ -7,8 +7,8 @@
 #include <span>
 #include "Windows.h"
 
-using Bytes = std::vector<std::byte>;
-using BytesView = std::span<std::byte>;
+using Bytes = std::vector<unsigned char>;
+using BytesView = std::span<unsigned char>;
 
 template <typename T>
 using Expected = std::expected<T,std::exception>;

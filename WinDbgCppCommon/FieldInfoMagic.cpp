@@ -5,8 +5,6 @@
 using namespace std;
 
 
-
-
 FieldInfoMagic::FieldInfoMagic(DebugMagic& debugmagic): m_debug_magic(debugmagic)
 {
 }
@@ -15,8 +13,6 @@ FieldInfoMagic::FieldInfoMagic(DebugMagic& debugmagic): m_debug_magic(debugmagic
 FieldInfoMagic::~FieldInfoMagic()
 {
 }
-
-
 
 
 void FieldInfoMagic::pre_create_cache_for_type(const std::string& module_name, const std::string& type_name){
@@ -69,8 +65,6 @@ void FieldInfoMagic::pre_create_cache_for_type(const std::string& module_name, c
 }
 
 
-
-
 Expected<SymbolTableCache*> FieldInfoMagic::get_current_symbol_table(const std::string& module_name)
 {
 	if (!m_system_cache.contains(module_name)) {
@@ -79,6 +73,7 @@ Expected<SymbolTableCache*> FieldInfoMagic::get_current_symbol_table(const std::
 
 	 return &m_system_cache.at(module_name);
 }
+
 
 Expected<TypeInfoCache*> FieldInfoMagic::get_type_info(const std::string& module_name, const std::string& type_name)
 {
@@ -101,8 +96,6 @@ Expected<TypeInfoCache*> FieldInfoMagic::get_type_info(const std::string& module
 
 	 return &symbol_table_cache_2.value()->at(type_name);
 }
-
-
 
 
 Expected<FieldInfo*> FieldInfoMagic::get_field_info(const std::string& module_name, const std::string& type_name, const std::string& field_name)
