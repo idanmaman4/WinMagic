@@ -18,25 +18,6 @@
 
 
 
-class StdOutCallbacks : public IDebugOutputCallbacks {
-public:
-	// IUnknown methods
-	STDMETHODV_(ULONG, AddRef)(THIS) { return 1; }
-	STDMETHODV_(ULONG, Release)(THIS) { return 0; }
-	STDMETHODV(QueryInterface)(THIS_ IN REFIID InterfaceId, OUT PVOID* Interface) {
-		if (IsEqualIID(InterfaceId, __uuidof(IUnknown)) || IsEqualIID(InterfaceId, __uuidof(IDebugOutputCallbacks))) {
-			*Interface = (IDebugOutputCallbacks*)this;
-			return S_OK;
-		}
-		return E_NOINTERFACE;
-	}
-	// IDebugOutputCallbacks method
-	STDMETHODV(Output)(THIS_ IN ULONG Mask, IN PCSTR Text) {
-		std::cout << Text;
-		return S_OK;
-	}
-};
-
 
 int wmain(int argc, wchar_t* argv[])
 {
@@ -51,6 +32,7 @@ int wmain(int argc, wchar_t* argv[])
 
 	DebugMagic debug_magic(argv[1]);
 	debug_magic.load_ntos_symbols();
+	
 
 	Expected<uint32_t> ssdt_size = debug_magic.get_symbol_address_as_struct<uint32_t>("nt", "KiServiceLimit");
 	if (!ssdt_size.has_value()) {

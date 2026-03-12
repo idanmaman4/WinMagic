@@ -1,5 +1,5 @@
 #include "SymbolMagic.h"
-
+#include "WinStructres.hpp"
 using namespace std;
 
 
@@ -11,6 +11,7 @@ SymbolMagic::SymbolMagic(MasterDebugBridge& master_interface) : m_symbols(master
 
 void SymbolMagic::reload_symbol_path(std::filesystem::path symbol_path)
 {
+    m_symbols.get_interface()->SetSymbolOptions(SYMOPT_UNDNAME | SYMOPT_LOAD_LINES | SYMOPT_OMAP_FIND_NEAREST | SYMOPT_AUTO_PUBLICS | SYMOPT_DEBUG);
     m_symbols.get_interface()->SetSymbolPathWide(symbol_path.c_str());
     m_symbols.get_interface()->Reload("");
 }
