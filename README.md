@@ -35,4 +35,16 @@ and let's time the !process 0 0
 <img width="2537" height="1025" alt="image" src="https://github.com/user-attachments/assets/4320d821-e02f-4d61-9fc9-18bf73454c50" />
 
 
+and now let's watch the proof in IDA for resolving symbols in a loop in an inefficent way:
+<img width="1780" height="93" alt="image" src="https://github.com/user-attachments/assets/328df96e-df1c-4c49-aa83-d5dd4f3ce692" />
+<img width="1597" height="102" alt="image" src="https://github.com/user-attachments/assets/28d18871-f18b-430f-acd7-1c4bf8aa4f01" />
+<img width="1840" height="838" alt="image" src="https://github.com/user-attachments/assets/4576a61e-8c7a-4500-9711-f51ea96a1bbe" />
+<img width="1800" height="394" alt="image" src="https://github.com/user-attachments/assets/b61d6d92-2000-41ac-856d-c182ca81cdd7" />
+<img width="1648" height="586" alt="image" src="https://github.com/user-attachments/assets/a0b85e32-d50f-45c9-8d0d-2867fd9729da" />
+
+
+
+and in SwishDbg: 
+<img width="1113" height="850" alt="image" src="https://github.com/user-attachments/assets/2c2dc918-59b2-4c54-b377-83a2f39346f7" />
+
 
